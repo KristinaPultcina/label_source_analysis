@@ -13,106 +13,94 @@ library(purrr)
 library(tidyverse)
 library(scales)
 library(optimx)
+library(remotes)
+library(permutes)
+library(buildmer)
+library(Matrix)
 options(scipen = 999)
-options(scipen = 0)
 
-setwd("/Users/kristina/Documents/stc/lmem_label/lmem_sources")
-setwd('/Users/kristina/Documents/stc/lmem_label/df_lmem_label')
-data_path<- "/Users/kristina/Documents/stc/lmem_label/df_lmem_label"
-out_path<- "/Users/kristina/Documents/stc/lmem_label/lmem_sources"
-df<- read.csv('/Users/kristina/Documents/stc/lmem_label/tbl_new_int.csv', sep=",")
-df[,1]<-NULL
+data_path<-'/Users/kristina/Documents/stc/df_900_300_mean'
 
-##### Merge all df with label at one df #########
-tbl <-list.files(pattern = "*.csv",full.names = T) 
+
 read_plus <- function(flnm) {
   read_csv(flnm) %>% 
     mutate(filename = flnm)
 }
+######### Looad dataframes #########
+tbl_with_sources <-list.files(data_path,pattern = "*.csv", full.names = T) %>% 
+  map_df(~fread(.))
 
-tbl_with_sources <-list.files(pattern = "*.csv", full.names = T) %>% 
-  map_df(~read_plus(.))
 setDT(tbl_with_sources)
-tbl_with_sources[,1]<-NULL
-tbl_with_sources$trial_number<-NULL
 
-df<- tbl_with_sources[!duplicated(tbl_with_sources),]
-temp<-df
-files <- list.files(pattern = ".csv") 
+label<- unique(tbl_with_sources$label)
 
-setDT(df)
+###### create df for stc plots with mean beta power ########
+mean_df_step_1<- tbl_with_sources%>% group_by(subject, trial_type,label,round) %>% 
+  dplyr::summarise(mean_beta = mean(beta_power))
+mean_df_step_2<- mean_df_step_1%>% group_by(subject, trial_type,label) %>% 
+  dplyr::summarise(mean_beta = mean(mean_beta))
+mean_df_step_3<- mean_df_step_2%>% group_by(trial_type,label) %>% 
+  dplyr::summarise(mean_beta = mean(mean_beta))
+setwd("/Users/kristina/Documents/stc/lmem_label")
+######## create data with differences in beta power choose needed condition #######
+hp<- filter(mean_df_step_3, trial_type=="norisk")
+lp<- filter(mean_df_step_3, trial_type=="risk")
+diff<- as.data.frame(lp$mean_beta-hp$mean_beta)
+colnames(diff)<- "mean_beta"
+write.csv(diff, "dfff_lp_minus_label_900_300.csv")
 
 
 
-write.csv(df, "tbl_with_sources.csv")
-data <- data_frame(filename = tbl) %>% mutate(file_contents = map(tbl, ~ read_csv(file.path(data_path, .))))        
-                   
 
 
+############ LMEM with post-hocs ############
 
-files <- data.table(full_filename=list.files(data_path, pattern = '*.csv', full.names = T))
-files$short_filename <- list.files(data_path, pattern = '*.csv', full.names = F)
-emm_options(pbkrtest.limit = 8000)
+p_vals1 <- data.table()
+for (l in 1:length(label)){
+  temp<- subset(tbl_with_sources,label == label[l])
+  
+  print(temp)
+  m <-  lmer(beta_power ~ trial_type + (1|subject), data = temp)
+  summary(m)
+  
+  #Tuk<-data.table(summary(emmeans(regrid(ref_grid(m, transform = "response")), pairwise ~ trial_type, adjust = 'tukey',lmer.df = "satterthwaite"))$contrasts)
+  Tuk <- data.table(summary(emmeans(m, pairwise ~ trial_type, adjust = 'tukey',lmer.df = "satterthwaite",lmerTest.limit=2498162))$contrasts)
+  Tuk[,contrast:=gsub(' - ','_',contrast)]
+  Tuk[,p.value:=format(p.value, digits = 3)]
+  #Tuk[,contrast:=paste0(trial_type,'-',contrast)]
+  #Tuk[,contrast:=paste0(trial_type,'-',feedback_cur,'-',contrast)] ####### if you need triple interaction #########
+  columns <- c('contrast','p.value')
+  Tuk <- Tuk[,..columns]
+  Tuk$interval <- "mean_beta"
+  Tuk <- dcast(Tuk,formula = interval~contrast,value.var = 'p.value')
+  Tuk$label <- unique(temp$label)
+  #Tuk$short_filename <- l
+  p_vals1 <- rbind(p_vals1,Tuk)
+}
+
+
+############# LMEM main effects ###########
+
 p_vals <- data.table()
-emm_options(lmerTest.limit = 2498162)
-cols <- colnames(df)[grep('[0-9]',colnames(df))]
-label<- unique(df$filename)
-
 for (l in 1:length(label)){
-  temp<- subset(df,filename == label[l])
-  labell<- unique(temp$filename)
-  for (j in cols) {
-      m <- lmer(get(j) ~ trial_type * feedback_cur + (1|subject), data = temp)
-      #Tuk<-data.table(summary(emmeans(regrid(ref_grid(m, transform = "response")), pairwise ~ trial_type, adjust = 'tukey',lmer.df = "satterthwaite"))$contrasts)
-      Tuk <- data.table(summary(emmeans(m, pairwise ~ feedback_cur|trial_type, adjust = 'tukey',lmer.df = "satterthwaite",lmerTest.limit=2498162))$contrasts)
-      #print(summary(Tuk))
-      #print(Tuk)
-    
-      Tuk[,contrast:=gsub(' - ','_',contrast)]
-      Tuk[,p.value:=format(p.value, digits = 3)]
-      Tuk[,contrast:=paste0(trial_type,'-',contrast)]
-      columns <- c('contrast','p.value')
-      Tuk <- Tuk[,..columns]
-      Tuk$interval <- j
-      Tuk$interval <- gsub('beta power','',Tuk$interval)
-      Tuk <- dcast(Tuk,formula = interval~contrast,value.var = 'p.value')
-      Tuk$filename <- labell
-      #Tuk$short_filename <- l
-      p_vals <- rbind(p_vals,Tuk)
-    }
+  temp<- subset(tbl_with_sources,label == label[l])
+  
+  print(temp)
+  m <-  lmer(beta_power ~ trial_type + (1|subject), data = temp,)
+  summary(m)
+  an <- anova(m)
+  #print(an)
+  an <- data.table(an,keep.rownames = TRUE)
+  an_cols <- c('rn','Pr(>F)') 
+  an <- an[, ..an_cols]
+  an$`Pr(>F)` <- format(an$`Pr(>F)`, digits = 3)
+  an$interval <- "beta_power"
+  an$interval <- gsub('beta power','',an$interval)
+  an <- dcast(an,formula = interval~rn,value.var = 'Pr(>F)')
+  an$label <- unique(temp$label)
+  p_vals <- rbind(p_vals,an)
 }
-
-
-write.csv(p_vals  "p_feedback.csv")
-
-for (l in 1:length(label)){
-  temp<- subset(df,filename == label[l])
-  labell<- unique(temp$filename)
-  for (j in cols) {
-      m <- lmer(get(j) ~ trial_type * feedback_cur + (1|subject), data = temp)
-      #Tuk<-data.table(summary(emmeans(regrid(ref_grid(m, transform = "response")), pairwise ~ trial_type, adjust = 'tukey',lmer.df = "satterthwaite"))$contrasts)
-      Tuk <- data.table(summary(emmeans(m, pairwise ~ trial_type, adjust = 'tukey',lmer.df = "satterthwaite",lmerTest.limit=2498162))$contrasts)
-      #print(summary(Tuk))
-      #print(Tuk)
-    
-      #Tuk[,contrast:=gsub(' - ','_',contrast)]
-      Tuk[,p.value:=format(p.value, digits = 3)]
-      Tuk[,contrast:=paste0(trial_type,'-',contrast)]
-      columns <- c('contrast','p.value')
-      Tuk <- Tuk[,..columns]
-      Tuk$interval <- j
-      Tuk$interval <- gsub('beta power','',Tuk$interval)
-      Tuk <- dcast(Tuk,formula = interval~contrast,value.var = 'p.value')
-      Tuk$filename <- labell
-      #Tuk$short_filename <- l
-      p_vals <- rbind(p_vals,Tuk)
-    }
-}
-
-
-write.csv(p_vals  "p_trial_type.csv")
-
-
-
+setwd("/Users/kristina/Documents/stc/lmem_label")
+write.csv(p_vals1, "anova_label_900_300.csv")
 
 

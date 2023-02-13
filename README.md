@@ -1,4 +1,4 @@
-# label_source_analysis
+# lmem_source_analysis (based on parcelation)
 This scripts made linear mixed effect model for parcelation by S.Khan (aparc_sub)
 
 Step 1. create_stc_for_single_epo.py - Create the stc files for each epoch with extracting needed freq bands. For source localization apply sLoreta

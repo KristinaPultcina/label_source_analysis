@@ -12,36 +12,22 @@ import copy
 import statsmodels.stats.multitest as mul
 from mne.stats import  fdr_correction
 
-#mne.viz.set_3d_backend('pyvista')
 
 
 
-os.environ['SUBJECTS_DIR'] = '/Users/kristina/Documents/stc/freesurfer'
-subjects_dir = '/Users/kristina/Documents/stc/freesurfer'
-label_list= mne.read_labels_from_annot("fsaverage", parc = "HCPMMP1")
-#label_list.pop(0)
-
-### delete label of median wall  <Label | fsaverage, '???-lh', lh : 13868 vertices>,  <Label | fsaverage, '???-rh', rh : 13940 vertices>
-#label_list.pop(0)
-#rh_list = mne.read_labels_from_annot("fsaverage", parc = "HCPMMP1", hemi ="rh") 
-#lh_list = mne.read_labels_from_annot("fsaverage", parc = "HCPMMP1", hemi = "lh")
+os.environ['SUBJECTS_DIR'] = '/Volumes/My Passport for Mac/freesurfer'
+subjects_dir = '/Volumes/My Passport for Mac/freesurfer'
 
 
-subjects = pd.read_csv('/Users/kristina/Documents/stc/subj_list.csv')['subj_list'].tolist()
-subjects.remove('P062') 
-subjects.remove('P052') 
-subjects.remove("P032")
-subjects.remove('P045') 
+labels= mne.read_labels_from_annot("fsaverage", parc = "aparc_sub")
 
 
-df = pd.read_csv('/Users/kristina/Documents/stc/lmem_label/p_trial_type_lp_hp.csv', sep = ";") 
+labels = [lab for lab in labels if 'unknown' not in lab.name]
+label_names = [label.name for label in labels]
 
-def space_fdr(p_val_n):
-    #print(p_val_n.shape)
-    temp = copy.deepcopy(p_val_n)
-    for i in range(temp.shape[1]):
-        _, temp[:,i] = mul.fdrcorrection(p_val_n[:,i])
-    return temp
+
+df = pd.read_csv('/Users/kristina/Documents/stc/lmem_label/lmem_label_1100_1500.csv', sep = ";") 
+
 
  
     
@@ -52,14 +38,13 @@ stc_test.resample(10)
     
 
 ################### CREATE STC ###################
-data = []
-for label in label_list:
-    print(label)
-    pval_s = df.loc[df['label_short'] == label.name]
-    pval_trial_type = pval_s['norisk_risk'].tolist()
-    data.append(pval_trial_type)
+data =df['group:trial_type']
+#df1 = data.drop([448])
 data = np.array(data)
-space_fdr_data = space_fdr(data)
+
+space_fdr_data = mul.fdrcorrection(data,alpha=0.05)
+space_fdr_data=space_fdr_data[1]
+
 
 ####### rescale for vizualization 10p ########
 data_pval = []
@@ -81,6 +66,8 @@ nofdr_stc.save ('/Users/kristina/Documents/stc/lmem_label/stc_for_article/averag
 fdr_stc = mne.labels_to_stc(label_list,fdr_data_pval, tmin = -0.800, tstep = 0.5, src =src)
 fdr_stc.save ('/Users/kristina/Documents/stc/lmem_label/stc_for_article/model_subj_epoches/space_fdr_norisk_risk_10p', overwrite=True)
 
+
+####### plots ############
 intervals = [[1.500, 1.900]]
 
 intervals = [[-0.900, -0.300]]

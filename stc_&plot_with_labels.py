@@ -59,11 +59,11 @@ for f in space_fdr_data:
     fdr_data_pval.append(fdr_pval)
 fdr_data_pval = np.array(fdr_data_pval)
 
-nofdr_stc = mne.labels_to_stc(label_list, data_pval, tmin = -0.800, tstep = 0.5, src=src)
+nofdr_stc = mne.labels_to_stc(labels, data_pval, tmin = -0.800, tstep = 0.5, src=src)
 nofdr_stc.save ('/Users/kristina/Documents/stc/lmem_label/stc_for_article/averaged_stc/hp_lp_avg_10p',overwrite=True)
 
 
-fdr_stc = mne.labels_to_stc(label_list,fdr_data_pval, tmin = -0.800, tstep = 0.5, src =src)
+fdr_stc = mne.labels_to_stc(labels,fdr_data_pval, tmin = -0.800, tstep = 0.5, src =src)
 fdr_stc.save ('/Users/kristina/Documents/stc/lmem_label/stc_for_article/model_subj_epoches/space_fdr_norisk_risk_10p', overwrite=True)
 
 

@@ -27,9 +27,7 @@ feedback = ['positive', 'negative']
 
 #parc that we used https://balsa.wustl.edu/WN56
 labels =  mne.read_labels_from_annot("fsaverage", "aparc_sub", hemi = "both")
-label_names = [label.name for label in labels] 
-
-labels.pop(448)###### delete unknown labels !!!!
+labels = [lab for lab in labels if 'unknown' not in lab.name]
 label_names = [label.name for label in labels] 
 
 data_path = "/net/server/data/Archive/prob_learn/pultsinak/beta_16_30/stc/stc_epo_fsaverage"

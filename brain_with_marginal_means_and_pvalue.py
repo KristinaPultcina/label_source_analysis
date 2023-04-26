@@ -32,7 +32,7 @@ df = pd.read_csv('/Users/kristina/Documents/stc/lmem_label/dfs/tukey_label_1100_
 src = mne.setup_source_space(subject = "fsaverage", spacing="ico5", add_dist=False)
 
 ###### create plot  with p_value with marginal means ######
-data =df['positive-risk-autists - normal']
+data =df['positive-risk-autists - normal'] ### p-value
 #df1 = data.drop([448])
 data = np.array(data)
 data[data>0.05]=1
@@ -41,7 +41,7 @@ space_fdr_data=space_fdr_data[1]
 space_fdr_data[space_fdr_data>0.05]=1
 mean_data =df['lp_pos_aut_norm']
 #df1 = data.drop([448])
-mean_data= np.array(mean_data)
+mean_data= np.array(mean_data) ### marginal means
 label_number= np.linspace(0, 447, 448)
 arr= np.column_stack((data, mean_data, label_number))
 

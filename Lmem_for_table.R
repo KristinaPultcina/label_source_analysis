@@ -69,7 +69,34 @@ data_accuracy_clean = lp_hp %>%
 emm_options(lmerTest.limit = 10000)
 emm_options(pbkrtest.limit = 9000)
 
-###### create table with marginal means #######
+
+######## LMEM MAIN EFFECTS #########
+p_vals <- data.table()
+for (l in 1:length(labels)){
+  temp<- subset(lp_hp,label == labels[l])
+  
+  print(temp)
+  m <-  lmer(beta_power ~ trial_type*group*feedback_cur + (1|subject), data = temp)
+  summary(m)
+  an <- anova(m)
+  #print(an)
+  an <- data.table(an,keep.rownames = TRUE)
+  an_cols <- c('rn','Pr(>F)') 
+  an <- an[, ..an_cols]
+  an$`Pr(>F)` <- format(an$`Pr(>F)`, digits = 3)
+  an$interval <- "beta_power"
+  an$interval <- gsub('beta power','',an$interval)
+  an <- dcast(an,formula = interval~rn,value.var = 'Pr(>F)')
+  an$label <- unique(temp$label)
+  p_vals <- rbind(p_vals,an)
+}
+
+setwd("/Users/kristina/Documents/stc/lmem_label/dfs")
+write.csv(p_vals, "lmem_label_1100_1500.csv")
+
+
+
+###### create table with marginal means based on LMEM moodel #######
 marginal <- data.table()
 
 for (l in 1:length(labels)){
@@ -115,32 +142,8 @@ lp_aut<- lp_aut_neg$emmean - lp_aut_pos$emmean
 lp_neg_aut_norm <- lp_aut_neg$emmean - lp_norm_neg$emmean
 lp_pos_aut_norm <- lp_aut_pos$emmean - lp_norm_pos$emmean
 
-######## LMEM #########
-p_vals <- data.table()
-for (l in 1:length(labels)){
-  temp<- subset(lp_hp,label == labels[l])
-  
-  print(temp)
-  m <-  lmer(beta_power ~ trial_type*group*feedback_cur + (1|subject), data = temp)
-  summary(m)
-  an <- anova(m)
-  #print(an)
-  an <- data.table(an,keep.rownames = TRUE)
-  an_cols <- c('rn','Pr(>F)') 
-  an <- an[, ..an_cols]
-  an$`Pr(>F)` <- format(an$`Pr(>F)`, digits = 3)
-  an$interval <- "beta_power"
-  an$interval <- gsub('beta power','',an$interval)
-  an <- dcast(an,formula = interval~rn,value.var = 'Pr(>F)')
-  an$label <- unique(temp$label)
-  p_vals <- rbind(p_vals,an)
-}
 
-setwd("/Users/kristina/Documents/stc/lmem_label/dfs")
-write.csv(p_vals, "lmem_label_1100_1500.csv")
-
-
-####### between group post-hoc's ######
+####### between group POST-HOC ######
 p_vals <- data.table()
 for (l in 1:length(labels)){
   temp<- subset(lp_hp,label == labels[l])
@@ -164,8 +167,6 @@ p_vals<- cbind(p_vals,lp_neg_aut_norm )
 p_vals<- cbind(p_vals,lp_pos_aut_norm )
 setwd("/Users/kristina/Documents/stc/lmem_label/dfs")
 write.csv(p_vals, "tukey_label_1100_1500_betweengroup.csv")
-
-
 
 
 

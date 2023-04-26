@@ -39,8 +39,6 @@ data[data>0.05]=1
 space_fdr_data = mul.fdrcorrection(data,alpha=0.05)
 space_fdr_data=space_fdr_data[1]
 space_fdr_data[space_fdr_data>0.05]=1
-   
-
 mean_data =df['lp_pos_aut_norm']
 #df1 = data.drop([448])
 mean_data= np.array(mean_data)
@@ -56,8 +54,6 @@ nofdr_stc = mne.labels_to_stc(labels,arr[:,1], subject="fsaverage")
 
 nofdr_stc.save ('/Users/kristina/Documents/stc/lmem_label/stc/beta_diff/1500_1900/group_trial_type_feedback_1500_1900_fdr',overwrite=True)
 
-nofdr_stc.plot(hemi="both")
-
 
 fdr_stc = mne.labels_to_stc(labels,space_arr[:,1], tmin = -0.800, tstep = 0.1)
 fdr_stc.save ('/Users/kristina/Documents/stc/lmem_label/stc/group_trial_type_feedback_fdr', overwrite=True)
@@ -68,8 +64,7 @@ stc=nofdr_stc
 brain = mne.viz.plot_source_estimates(stc, hemi='split', time_viewer=False, background='white', 
                                                   foreground = 'black', cortex='bone', size = (1200, 800),
                                                         views = ['lat', 'med'], clim = dict(kind = 'value', 
-                                                                                          
-                                                                                          pos_lims= [0.25,0.30, 1]), 
+                                                                                          pos_lims= [0.25,0.30, 1]), ###### choose scale!!!!
                                                   initial_time = -0.700, spacing ='ico5')
                                 
 

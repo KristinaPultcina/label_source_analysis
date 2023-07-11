@@ -28,8 +28,8 @@ df = pd.read_csv('/Users/kristina/Documents/stc/lmem_label/lmem_label_1100_1500.
 
     
 src = mne.setup_source_space(subject = "fsaverage", spacing='ico5', add_dist=False)
-stc_test = mne.read_source_estimate('/Users/kristina/Documents/stc/lmem_label/P001_run2_norisk_fb_cur_negative_fsaverage/0', "fsaverage").crop(tmin= -0.800, tmax= 2.100, include_tmax=True)
-stc_test.resample(10)
+#stc_test = mne.read_source_estimate('/Users/kristina/Documents/stc/lmem_label/P001_run2_norisk_fb_cur_negative_fsaverage/0', "fsaverage").crop(tmin= -0.800, tmax= 2.100, include_tmax=True)
+#stc_test.resample(10)
     
     
 

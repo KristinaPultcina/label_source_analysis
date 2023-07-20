@@ -103,7 +103,7 @@ def make_stc_epochs_from_freq_epochs_var2(subj, r, cond, fb, data_path, L_freq, 
     epochs_bl = mne.Epochs(raw_data, events, event_id = None, tmin = -1.0, tmax = 1.0, baseline = None, picks = picks, preload = True)
     cov = mne.compute_covariance(epochs=epochs_bl, method='auto', tmin=-0.35, tmax = -0.05)
      
-    epochs_bl.resample(100)
+    #epochs_bl.resample(100)
     
     ####### ДЛЯ ДАННЫХ ##############
     # baseline = None, чтобы не вычитался дефолтный бейзлайн
@@ -115,7 +115,7 @@ def make_stc_epochs_from_freq_epochs_var2(subj, r, cond, fb, data_path, L_freq, 
     fwd = mne.make_forward_solution(info=epochs.info, trans=trans, src=src, bem=bem)	                
     inv = mne.minimum_norm.make_inverse_operator(raw_data.info, fwd, cov, loose=0.2) 	                
 		       
-    epochs.resample(100) 
+    #epochs.resample(100) 
     
     stc_baseline = mne.minimum_norm.source_band_induced_power(epochs_bl.pick('meg'), inv, bands,method='sLORETA', use_fft=False, df = f_step, n_cycles = 8)["beta"].crop(tmin=baseline[0], tmax=baseline[1], include_tmax=True)
     

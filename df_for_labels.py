@@ -51,7 +51,7 @@ for subj in subjects:
                         stc2 = stc.copy()
                         stc2=stc2.crop(tmin=1.500, tmax=1.900, include_tmax=True) ### crop the time what you want to analyse
 
-                        label_ts = mne.extract_label_time_course(stc2,labels, src=fsaverage, mode='mean')
+                        label_ts = mne.extract_label_time_course(stc2,labels, src=fsaverage, mode='pca_flip')
                         label_ts_avg=label_ts.mean(axis=1)
                         
                         epo = [ep for i in range(448)]
@@ -68,7 +68,7 @@ for subj in subjects:
                         df_epo['trial_type'] = trial
                         df_epo['feedback_cur'] = fb_cur
                             
-                        df = df.append(df_epo)    
+                        df = pd.concat([df,df_epo], axis=0)    
                          
                                        
                 except (OSError, FileNotFoundError):
